@@ -46,6 +46,7 @@ jobs:
             app.py
             model.pkl
             requirements.txt
+            run.sh
 
   deploy:
     permissions:
