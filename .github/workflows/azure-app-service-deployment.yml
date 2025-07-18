@@ -33,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Train model and save as pickle
+        run: python wine.py
+
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Upload artifact for deployment jobs
@@ -40,8 +43,9 @@ jobs:
         with:
           name: python-app
           path: |
-            .
-            !venv/
+            app.py
+            model.pkl
+            requirements.txt
 
   deploy:
     permissions:
@@ -65,3 +69,5 @@ jobs:
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
+
