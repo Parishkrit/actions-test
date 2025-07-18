@@ -38,6 +38,9 @@ jobs:
 
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
+      - name: Convert startup.sh to Unix format
+        run: dos2unix run.sh
+
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
