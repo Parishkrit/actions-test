@@ -44,7 +44,7 @@ jobs:
           name: python-app
           path: |
             app.py
-            model.pkl
+            tree.pkl
             requirements.txt
             run.sh
 
