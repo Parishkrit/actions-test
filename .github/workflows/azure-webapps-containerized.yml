@@ -1,4 +1,4 @@
-name: Build and deploy Python app to Azure Web App
+name: Build and deploy a containerized python app to Azure Web App
 
 env:
   AZURE_WEBAPP_NAME: ga-testt-containerized  # set this to the name of your Azure Web App
@@ -36,17 +36,19 @@ jobs:
       - name: Train model and save as pickle
         run: python wine.py
 
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
+      # Container build and push to acr using username password of acr
+      
+      - name: Log in to ACR with admin credentials
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }}.azurecr.io \
+              -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
-      - name: Upload artifact for deployment jobs
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-app
-          path: |
-            app.py
-            tree.pkl
-            requirements.txt
-            run.sh
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:latest .
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:latest
+
+
 
   deploy:
     permissions:
@@ -55,19 +57,29 @@ jobs:
     needs: build
     environment:
       name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
+      - name: Azure CLI Login with Publish Profile
+        uses: azure/login@v1
         with:
-          name: python-app
-          path: .
-
-      - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_C }}
-          package: .
+
+      - name: Set container image from ACR
+        run: |
+          az webapp config container set \
+            --name ${{ secrets.AZURE_WEBAPP_NAME_C }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --docker-custom-image-name ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:latest \
+            --docker-registry-server-url https://${{ secrets.REGISTRY_NAME }}.azurecr.io \
+            --docker-registry-server-user ${{ secrets.ACR_USERNAME }} \
+            --docker-registry-server-password ${{ secrets.ACR_PASSWORD }}
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --name ${{ secrets.AZURE_WEBAPP_NAME_C }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+      - name: Set deployment URL
+        id: deploy-to-webapp
+        run: echo "webapp-url=https://${{ secrets.AZURE_WEBAPP_NAME_C }}.azurewebsites.net" >> $GITHUB_OUTPUT
