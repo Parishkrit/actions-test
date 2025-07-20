@@ -39,8 +39,7 @@ jobs:
       # Container build and push to acr using username password of acr
       
       - name: Log in to ACR with admin credentials
-        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }}.azurecr.io \
-              -u ${{ secrets.ACR_USERNAME }} --password-stdin
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.REGISTRY_NAME }}.azurecr.io -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Build Docker image
         run: docker build -t ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:latest .
