@@ -58,18 +58,20 @@ jobs:
 
     steps:
       - name: Deploy container from ACR to Azure Web App
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_C }}
           images: ${{ secrets.REGISTRY_NAME }}.azurecr.io/${{ secrets.IMAGE_NAME }}:latest
 
-      - name: Restart Azure App Service
-        uses: azure/cli@v1
-        with:
-          inlineScript: az webapp restart --name ${{ secrets.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
+      # - name: Restart Azure App Service
+      #   uses: azure/cli@v1
+      #   with:
+      #     inlineScript: az webapp restart --name ${{ secrets.AZURE_WEBAPP_NAME }} --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }}
 
     
+      
       - name: Set environment URL
         id: set-url
         run: echo "webapp-url=https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net" >> $GITHUB_OUTPUT
