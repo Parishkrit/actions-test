@@ -1,0 +1,47 @@
+name: Trigger AML Pipeline via REST API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  trigger-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Extract AZURE Credentials
+        id: creds
+        run: |
+          echo '${{ secrets.AZURE_CREDENTIALS }}' > azurecreds.json
+
+      - name: Get Azure Access Token
+        id: get_token
+        run: |
+          CLIENT_ID=$(jq -r .clientId azurecreds.json)
+          CLIENT_SECRET=$(jq -r .clientSecret azurecreds.json)
+          TENANT_ID=$(jq -r .tenantId azurecreds.json)
+
+          TOKEN=$(curl -s -X POST \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials&client_id=$CLIENT_ID&client_secret=$CLIENT_SECRET&resource=https://management.azure.com/" \
+            https://login.microsoftonline.com/$TENANT_ID/oauth2/token | jq -r .access_token)
+
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Trigger AML Pipeline (REST)
+        env:
+          ACCESS_TOKEN: ${{ steps.get_token.outputs.token }}
+        run: |
+          ENDPOINT="<your-endpoint-name>"
+          SUBSCRIPTION_ID="<your-subscription-id>"
+          RESOURCE_GROUP="<your-resource-group>"
+          WORKSPACE_NAME="<your-workspace-name>"
+
+          API_URL="https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.MachineLearningServices/workspaces/$WORKSPACE_NAME/pipelineEndpoints/$ENDPOINT/Invoke?api-version=2023-04-01-preview"
+
+          curl -X POST $API_URL \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{}'
