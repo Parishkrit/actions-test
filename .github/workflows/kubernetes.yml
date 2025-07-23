@@ -1,0 +1,52 @@
+name: kubernetes deployment
+
+on: 
+  workflow_dispatch:
+
+permissions:
+   id-token: write
+   contents: read
+   actions: read
+
+jobs:
+   build:
+      runs-on: ubuntu-latest
+      steps:
+         - uses: actions/checkout@v4
+
+         - uses: Azure/docker-login@v1
+           with:
+              login-server: acrrndga.azurecr.io
+              username: ${{ secrets.ACR_USERNAME }}
+              password: ${{ secrets.ACR_PASSWORD }}
+
+         - run: |
+              docker build . -t acrrndga.azurecr.io/winek8s:latest
+              docker push acrrndga.azurecr.io/k8sdemo:latest
+
+         - uses: azure/setup-kubectl@v4
+
+         # Set the target AKS cluster.
+         - uses: Azure/aks-set-context@v4
+           with:
+              creds: '${{ secrets.AZURE_CREDENTIALS }}'
+              cluster-name: acrrndga
+              resource-group: acrrndga-rg
+
+         - uses: Azure/k8s-create-secret@v4
+           with:
+              container-registry-url: acrrndga.azurecr.io
+              container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+              container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+              secret-name: demo-k8s-secret
+
+         - uses: Azure/k8s-deploy@v5
+           with:
+              action: deploy
+              manifests: |
+                 manifests/deployment.yml
+                 manifests/service.yml
+              images: |
+                 demo.azurecr.io/k8sdemo:${{ github.sha }}
+              imagepullsecrets: |
+                 demo-k8s-secret
