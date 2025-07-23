@@ -1,0 +1,23 @@
+name: Trigger DB Pipeline via REST API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  trigger-databricks-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Databricks Job via REST API
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+        run: |
+          JOB_ID=75044942544993
+
+          RESPONSE=$(curl -s -X POST "$DATABRICKS_HOST/api/2.1/jobs/run-now" \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"job_id\": $JOB_ID }")
+
+          echo "Response: $RESPONSE"
