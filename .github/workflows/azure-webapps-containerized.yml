@@ -25,6 +25,14 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
+      - name: Lint Code Base
+        uses: github/super-linter/slim@v5
+        env:
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_PYLINT: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_ERRORS: true   # 👈 Warnings only, will not fail
+
       - name: Create and start virtual environment
         run: |
           python -m venv venv
