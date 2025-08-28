@@ -31,7 +31,7 @@ jobs:
           VALIDATE_PYTHON_FLAKE8: true
           VALIDATE_PYTHON_PYLINT: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: true   # 👈 Warnings only, will not fail
+          DISABLE_ERRORS: true   # Warnings only
 
       - name: Create and start virtual environment
         run: |
